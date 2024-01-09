@@ -7,6 +7,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const passportLocalMongoose = require("passport-local-mongoose");
 const ejs = require("ejs");
 const _ = require("lodash");
+const methodOverride = require("method-override");
 
 require("dotenv").config();
 
@@ -17,6 +18,7 @@ app.use("/css", express.static(__dirname + "/public/css"));
 app.use("/img", express.static(__dirname + "/public/img"));
 app.set("views", "./views");
 app.set("view engine", "ejs");
+app.use(methodOverride("_method"));
 
 // Database
 mongoose.connect(process.env.URI, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -31,6 +33,10 @@ db.once("open", function () {
       const userSchema = new mongoose.Schema({
             username: String,
             password: String,
+            role: {
+                  type: String,
+                  default: "user",
+            },
       });
 
       userSchema.plugin(passportLocalMongoose);
@@ -169,6 +175,25 @@ db.once("open", function () {
                         });
                   }
             });
+      });
+
+      app.delete("/posts/:postId", (req, res) => {
+            const postId = req.params.postId;
+
+            if (req.isAuthenticated() && req.user.role === "admin") {
+                  // Implement logic to delete the post from the database
+                  Post.findByIdAndRemove(postId, (err) => {
+                        if (err) {
+                              console.error(err);
+                              // Handle the error, e.g., render an error page or redirect
+                        } else {
+                              res.redirect("/");
+                        }
+                  });
+            } else {
+                  // If the user is not an admin, redirect or show an error
+                  res.status(403).send("Permission Denied"); // 403 Forbidden
+            }
       });
 
       // Listen on port

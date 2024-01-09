@@ -8,9 +8,19 @@
                               <% posts.forEach(function(post) { %>
                               <h5 class="card-title"><%= post.title %></h5>
                               <p class="card-text">
-                                    <%= _.truncate(post.content, {"length": 100}) %>
+                                    <%= _.truncate(post.content, { "length": 100 }) %>
                               </p>
                               <a href="/posts/<%= post._id %>" class="btn btn-primary">Read More</a>
+
+                              <!-- Delete button form -->
+                              <form
+                                    action="/posts/<%= post._id %>?_method=DELETE"
+                                    method="POST"
+                                    style="display: inline"
+                              >
+                                    <button type="submit" class="btn btn-danger">Delete</button>
+                              </form>
+
                               <br /><br />
                               <% }); %>
                         </div>
