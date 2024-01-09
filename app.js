@@ -177,6 +177,15 @@ db.once("open", function () {
             });
       });
 
+      app.get("/logout", (req, res) => {
+            req.logout((err) => {
+                  if (err) {
+                        console.error(err);
+                  }
+                  res.redirect("/");
+            });
+      });
+
       app.delete("/posts/:postId", (req, res) => {
             const postId = req.params.postId;
 
@@ -192,7 +201,7 @@ db.once("open", function () {
                   });
             } else {
                   // If the user is not an admin, redirect or show an error
-                  res.status(403).send("Permission Denied"); // 403 Forbidden
+                  res.redirect("/"); // 403 Forbidden
             }
       });
 

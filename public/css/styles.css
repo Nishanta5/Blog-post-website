@@ -10,17 +10,25 @@ body {
       padding-top: 50px;
       padding-bottom: 70px;
 }
-
-.card {
-      opacity: 0.7;
+--webkit-scrollbar {
+      display: none;
 }
-
+.card {
+}
+.card-body {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+}
+.card-body::-webkit-scrollbar {
+      display: none;
+}
 img {
       display: block;
 }
 
 /* Navbar */
 .navbar {
+      background-color: #e5e5e5;
       padding-top: 15px;
       padding-bottom: 15px;
       border: 0;
