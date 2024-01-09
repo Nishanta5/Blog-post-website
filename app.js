@@ -1,112 +1,179 @@
-// Express
 const express = require("express");
 const app = express();
-
-// Modules
-require("dotenv").config();
-const ejs = require("ejs");
-const _ = require('lodash');
-
-//Mongoose
 const mongoose = require("mongoose");
-mongoose.connect(process.env.URI, { useNewUrlParser: true, useUnifiedTopology: true });
-const db = mongoose.connection;
+const session = require("express-session");
+const passport = require("passport");
+const LocalStrategy = require("passport-local").Strategy;
+const passportLocalMongoose = require("passport-local-mongoose");
+const ejs = require("ejs");
+const _ = require("lodash");
 
-// Global Variables
-const homeContent = "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
-const aboutContent = "Hac habitasse platea dictumst vestibulum rhoncus est pellentesque. Dictumst vestibulum rhoncus est pellentesque elit ullamcorper. Non diam phasellus vestibulum lorem sed. Platea dictumst quisque sagittis purus sit. Egestas sed sed risus pretium quam vulputate dignissim suspendisse. Mauris in aliquam sem fringilla. Semper risus in hendrerit gravida rutrum quisque non tellus orci. Amet massa vitae tortor condimentum lacinia quis vel eros. Enim ut tellus elementum sagittis vitae. Mauris ultrices eros in cursus turpis massa tincidunt dui.";
-const contactContent = "Scelerisque eleifend donec pretium vulputate sapien. Rhoncus urna neque viverra justo nec ultrices. Arcu dui vivamus arcu felis bibendum. Consectetur adipiscing elit duis tristique. Risus viverra adipiscing at in tellus integer feugiat. Sapien nec sagittis aliquam malesuada bibendum arcu vitae. Consequat interdum varius sit amet mattis. Iaculis nunc sed augue lacus. Interdum posuere lorem ipsum dolor sit amet consectetur adipiscing elit. Pulvinar elementum integer enim neque. Ultrices gravida dictum fusce ut placerat orci nulla. Mauris in aliquam sem fringilla ut morbi tincidunt. Tortor posuere ac ut consequat semper viverra nam libero.";
+require("dotenv").config();
 
 // .use/.set
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
-app.use("/css", express.static(__dirname + "public/css"));
-app.use("/img", express.static(__dirname + "public/img"));
+app.use("/css", express.static(__dirname + "/public/css"));
+app.use("/img", express.static(__dirname + "/public/img"));
 app.set("views", "./views");
 app.set("view engine", "ejs");
 
 // Database
+mongoose.connect(process.env.URI, { useNewUrlParser: true, useUnifiedTopology: true });
+const db = mongoose.connection;
+
+const homeContent = "home content";
+
 db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", function () {
-  console.log("Database is connected");
+      console.log("Database is connected");
 
-  //Post Schema
-  const postSchema = new mongoose.Schema({
-    title: {
-        type: String,
-        required: true
-    },
-    content: {
-        type: String,
-        required: true
-    }
-  });
-  const Post = mongoose.model("Post", postSchema);
-
-  // Home Page
-  app.get("/", (req, res) => {
-    Post.find(function(err, posts) {
-      res.render("home", {
-      homeContent: homeContent,
-      posts: posts,
-      _: _
+      const userSchema = new mongoose.Schema({
+            username: String,
+            password: String,
       });
-    });  
-  });
 
-  // About Page
-  app.get("/about", (req, res) => {
-    res.render("about", { aboutContent: aboutContent });
-  });
+      userSchema.plugin(passportLocalMongoose);
 
-  // Contact Page
-  app.get("/contact", (req, res) => {
-    res.render("contact", { contactContent: contactContent });
-  });
+      const User = mongoose.model("User", userSchema);
 
-  // Compose Page
-  app.get("/compose", (req, res) => {
-    res.render("compose");
-  });
-
-  // Publish Post
-  app.post("/compose", (req, res) => {
-    const post = new Post ({
-      title: req.body.postTitle,
-      content: req.body.postContent
-    });
-    
-    post.save(function(err) {
-      if (!err) {
-        res.redirect("/");
-      }
-    });
-  });
-
-  // Routing
-  app.get("/posts/:postId", function (req, res) {
-    const requestedPostId = req.params.postId;
-
-    Post.findOne({_id: requestedPostId}, function(err, post) {
-      res.render("post", {
-        title: post.title,
-        content: post.content
+      const postSchema = new mongoose.Schema({
+            title: {
+                  type: String,
+                  required: true,
+            },
+            content: {
+                  type: String,
+                  required: true,
+            },
       });
-    });
-  });
 
-  //////////
+      const Post = mongoose.model("Post", postSchema);
 
-});
+      passport.use(User.createStrategy());
+      passport.serializeUser(User.serializeUser());
+      passport.deserializeUser(User.deserializeUser());
 
+      app.use(
+            session({
+                  secret: process.env.SESSION_SECRET,
+                  resave: false,
+                  saveUninitialized: false,
+            })
+      );
 
+      app.use(passport.initialize());
+      app.use(passport.session());
 
+      // Home Page
+      app.get("/", (req, res) => {
+            if (req.isAuthenticated()) {
+                  Post.find((err, posts) => {
+                        if (err) {
+                              console.error(err);
+                              // Handle the error, e.g., render an error page or redirect
+                        } else {
+                              res.render("home", {
+                                    homeContent: homeContent,
+                                    posts: posts,
+                                    _: _,
+                              });
+                        }
+                  });
+            } else {
+                  res.redirect("/login");
+            }
+      });
 
-// Listen on port
-let port = process.env.PORT;
-if (port == null || port == "") {
-  port = 8000;
-}
-app.listen(port, () => {
-  console.log(`Server is running on ${port}.`);
+      // Signup Page
+      app.get("/signup", (req, res) => {
+            res.render("signup");
+      });
+
+      // Handle Signup
+      app.post("/signup", (req, res) => {
+            User.register({ username: req.body.username }, req.body.password, (err, user) => {
+                  if (err) {
+                        console.error(err);
+                        res.redirect("/signup");
+                  } else {
+                        passport.authenticate("local")(req, res, () => {
+                              res.redirect("/");
+                        });
+                  }
+            });
+      });
+
+      // Login Page
+      app.get("/login", (req, res) => {
+            res.render("login");
+      });
+
+      app.post(
+            "/login",
+            passport.authenticate("local", {
+                  successRedirect: "/",
+                  failureRedirect: "/login",
+            })
+      );
+
+      // Logout
+      app.get("/logout", (req, res) => {
+            req.logout();
+            res.redirect("/");
+      });
+
+      // About Page
+      app.get("/about", (req, res) => {
+            res.render("about", { aboutContent: aboutContent });
+      });
+
+      // Contact Page
+      app.get("/contact", (req, res) => {
+            res.render("contact", { contactContent: contactContent });
+      });
+
+      // Compose Page
+      app.get("/compose", (req, res) => {
+            res.render("compose");
+      });
+
+      app.post("/compose", (req, res) => {
+            const post = new Post({
+                  title: req.body.postTitle,
+                  content: req.body.postContent,
+            });
+
+            post.save((err) => {
+                  if (err) {
+                        console.error(err);
+                        // Handle the error, e.g., render an error page or redirect
+                  } else {
+                        res.redirect("/");
+                  }
+            });
+      });
+
+      // Routing
+      app.get("/posts/:postId", (req, res) => {
+            const requestedPostId = req.params.postId;
+
+            Post.findOne({ _id: requestedPostId }, (err, post) => {
+                  if (err) {
+                        console.error(err);
+                        // Handle the error, e.g., render an error page or redirect
+                  } else {
+                        res.render("post", {
+                              title: post.title,
+                              content: post.content,
+                        });
+                  }
+            });
+      });
+
+      // Listen on port
+      const port = process.env.PORT || 8000;
+      app.listen(port, () => {
+            console.log(`Server is running on ${port}.`);
+      });
 });

@@ -4,7 +4,7 @@
   "description": "An easy-to-use blog built using NodeJS, ExpressJS, MongoDB, and Mongoose.",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1", 
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon app.js"
   },
   "author": "Jade Hollow",
@@ -16,8 +16,14 @@
     "dotenv": "^10.0.0",
     "ejs": "^3.1.6",
     "express": "^4.17.1",
+    "express-session": "^1.17.3",
     "lodash": "^4.17.21",
     "mongoose": "^6.0.4",
-    "nodemon": "^2.0.12"
+    "mysql2": "^3.7.0",
+    "nodemon": "^2.0.12",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "passport-local-mongoose": "^8.0.0",
+    "sequelize": "^6.35.2"
   }
 }
